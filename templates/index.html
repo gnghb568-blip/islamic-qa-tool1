@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>أداة الأسئلة الإسلامية</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.2/marked.min.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Tajawal', Arial, sans-serif;
+            background-color: #ffffff;
+            display: flex;
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .sidebar {
+            width: 260px;
+            background-color: #f7f7f5;
+            border-left: 1px solid #e5e5e5;
+            display: flex;
+            flex-direction: column;
+            padding: 12px;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+        .new-chat-btn, .story-btn {
+            background-color: white;
+            color: #2c5f2d;
+            border: 1px solid #d0d0d0;
+            border-radius: 10px;
+            padding: 12px;
+            cursor: pointer;
+            font-size: 15px;
+            text-decoration: none;
+            text-align: center;
+            font-weight: 700;
+            font-family: 'Tajawal', Arial, sans-serif;
+        }
+        .story-btn {
+            background-color: #eef6ee;
+            border: 1px solid #2c5f2d;
+        }
+        .new-chat-btn:hover, .story-btn:hover {
+            background-color: #2c5f2d;
+            color: white;
+        }
+        .sidebar-title {
+            margin-top: 10px;
+            color: #888;
+            font-size: 13px;
+            padding: 0 8px;
+        }
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            min-width: 0;
+        }
+        .chat-container {
+            width: 100%;
+            max-width: 720px;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        h1 {
+            color: #2c5f2d;
+            text-align: center;
+            font-size: 20px;
+            font-weight: 500;
+            min-height: 28px;
+        }
+        .chat-box {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .message-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-self: flex-start;
+            max-width: 88%;
+        }
+        .message-wrapper.user-wrapper {
+            align-self: flex-end;
+        }
+        .message {
+            padding: 16px 20px;
+            border-radius: 16px;
+            font-size: 16.5px;
+            line-height: 1.9;
+        }
+        .user-message {
+            background-color: #2c5f2d;
+            color: white;
+            white-space: pre-wrap;
+        }
+        .bot-message {
+            background-color: #f2f2f0;
+            color: #1c1c1c;
+        }
+        .story-message {
+            background-color: #fdf6e3;
+            border: 1px solid #e8d9a0;
+        }
+        .bot-message p { margin: 0 0 10px 0; }
+        .bot-message p:last-child { margin-bottom: 0; }
+        .bot-message strong { color: #1e4620; font-weight: 700; }
+        .bot-message ul, .bot-message ol { margin: 8px 0; padding-inline-start: 22px; }
+        .bot-message li { margin-bottom: 6px; }
+        .bot-message h1, .bot-message h2, .bot-message h3 {
+            color: #2c5f2d;
+            margin: 12px 0 8px 0;
+            font-weight: 700;
+        }
+        .bot-message code {
+            background-color: #e4e4e0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 15px;
+        }
+        .bot-message a { color: #2c5f2d; }
+
+        /* أدوات أسفل رد الأداة: نسخ + تقييم */
+        .message-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 6px;
+            padding: 0 6px;
+        }
+        .action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 15px;
+            padding: 4px 6px;
+            border-radius: 6px;
+            color: #888;
+            opacity: 0.7;
+        }
+        .action-btn:hover {
+            opacity: 1;
+            background-color: #eee;
+        }
+        .action-btn.selected {
+            opacity: 1;
+            color: #2c5f2d;
+        }
+
+        /* مؤشر الكتابة (نقط متحركة) */
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 6px 4px;
+        }
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #999;
+            animation: typing-bounce 1.2s infinite ease-in-out;
+        }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing-bounce {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+            30% { transform: translateY(-6px); opacity: 1; }
+        }
+
+        form {
+            display: flex;
+            gap: 8px;
+            margin-top: 15px;
+            align-items: center;
+            border: 1px solid #ddd;
+            border-radius: 14px;
+            padding: 6px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            font-size: 16px;
+            font-family: 'Tajawal', Arial, sans-serif;
+            border: none;
+            outline: none;
+            min-width: 0;
+        }
+        button {
+            padding: 10px 18px;
+            background-color: #2c5f2d;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-family: 'Tajawal', Arial, sans-serif;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #1e4620;
+        }
+        button:disabled {
+            background-color: #aaa;
+            cursor: not-allowed;
+        }
+        .mic-btn {
+            background-color: white;
+            color: #2c5f2d;
+            border: 1px solid #ccc;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            font-size: 19px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .mic-btn.listening {
+            background-color: #d9534f;
+            color: white;
+            border: none;
+        }
+        .mic-btn:hover {
+            background-color: #eef6ee;
+        }
+
+        /* النافذة المنبثقة الترحيبية */
+        .welcome-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0, 0, 0, 0.55);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .welcome-card {
+            background-color: white;
+            border-radius: 18px;
+            padding: 36px 30px;
+            max-width: 460px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+        }
+        .welcome-card .icon { font-size: 34px; margin-bottom: 10px; }
+        .welcome-card p {
+            font-size: 19px;
+            line-height: 1.9;
+            color: #1e4620;
+            font-weight: 500;
+            margin: 10px 0 22px 0;
+        }
+        .welcome-card button {
+            padding: 12px 30px;
+            border-radius: 10px;
+        }
+
+        /* شكل الموبايل */
+        @media (max-width: 700px) {
+            body { flex-direction: column; overflow: auto; height: auto; min-height: 100vh; }
+            .sidebar {
+                width: 100%;
+                flex-direction: row;
+                flex-wrap: wrap;
+                padding: 8px;
+                gap: 6px;
+                border-left: none;
+                border-bottom: 1px solid #e5e5e5;
+            }
+            .new-chat-btn, .story-btn { flex: 1; padding: 8px; font-size: 13px; min-width: 100px; }
+            .sidebar-title { display: none; }
+            .main { padding: 10px; height: calc(100vh - 60px); }
+            h1 { font-size: 17px; }
+            .message { font-size: 15px; padding: 12px 14px; }
+            .message-wrapper { max-width: 95%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="welcome-overlay" id="welcomeOverlay">
+        <div class="welcome-card">
+            <div class="icon">📖</div>
+            <p id="welcomeQuote"></p>
+            <button type="button" id="startBtn">ابدأ</button>
+        </div>
+    </div>
+
+    <div class="sidebar">
+        <a href="/clear" class="new-chat-btn">＋ محادثة جديدة</a>
+        <button type="button" class="story-btn" id="storyBtn">📖 قصة وسؤال</button>
+        <div id="storyTopics" style="display:none; flex-direction:column; gap:6px; padding:0 4px;">
+            <button type="button" class="story-btn" data-topic="أنبياء" style="font-size:13px; padding:8px;">🕌 قصص الأنبياء</button>
+            <button type="button" class="story-btn" data-topic="صحابة" style="font-size:13px; padding:8px;">⭐ قصص الصحابة</button>
+            <button type="button" class="story-btn" data-topic="سيرة" style="font-size:13px; padding:8px;">📜 السيرة النبوية</button>
+        </div>
+        <button type="button" class="story-btn" id="voiceToggleBtn">🔊 تفعيل الرد الصوتي</button>
+        <div class="sidebar-title">الأداة الإسلامية</div>
+    </div>
+
+    <div class="main">
+        <div class="chat-container">
+            <h1 id="welcomeTitle">اسأل عن تفسير الفاتحة</h1>
+            <div class="chat-box" id="chatBox">
+                {% for msg in chat_history %}
+                    {% if msg.role == "user" %}
+                    <div class="message-wrapper user-wrapper">
+                        <div class="message user-message">{{ msg.text }}</div>
+                    </div>
+                    {% else %}
+                    <div class="message-wrapper">
+                        <div class="message bot-message markdown-content" data-raw="{{ msg.text | e }}"></div>
+                        <div class="message-actions">
+                            <button class="action-btn copy-btn" title="نسخ">📋</button>
+                            <button class="action-btn thumb-btn" data-value="up" title="إجابة جيدة">👍</button>
+                            <button class="action-btn thumb-btn" data-value="down" title="إجابة تحتاج تحسين">👎</button>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            <form id="chatForm">
+                <button type="button" class="mic-btn" id="micBtn" title="تحدث">🎤</button>
+                <input type="text" id="questionInput" placeholder="اكتب سؤالك أو اضغط المايك للتحدث..." autofocus autocomplete="off">
+                <button type="submit" id="sendBtn">إرسال</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const chatBox = document.getElementById("chatBox");
+        const form = document.getElementById("chatForm");
+        const input = document.getElementById("questionInput");
+        const sendBtn = document.getElementById("sendBtn");
+        const micBtn = document.getElementById("micBtn");
+        const storyBtn = document.getElementById("storyBtn");
+        const voiceToggleBtn = document.getElementById("voiceToggleBtn");
+        const welcomeTitle = document.getElementById("welcomeTitle");
+
+        // --- رسالة ترحيب متغيرة (العنوان الصغير) ---
+        const welcomeMessages = [
+            "اسأل عن تفسير الفاتحة",
+            "بم أقدر أساعدك اليوم؟",
+            "أهلاً بك، تفضّل بسؤالك"
+        ];
+        welcomeTitle.textContent = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)];
+
+        // --- النافذة المنبثقة: حديث أو حكمة عند فتح الموقع ---
+        const quotes = [
+            "﴿وَقُل رَّبِّ زِدْنِي عِلْمًا﴾",
+            "«خيركم من تعلّم القرآن وعلّمه» - رواه البخاري",
+            "«إنما الأعمال بالنيات» - رواه البخاري ومسلم",
+            "﴿إِنَّ مَعَ الْعُسْرِ يُسْرًا﴾",
+            "«من سلك طريقًا يلتمس فيه علمًا سهّل الله له به طريقًا إلى الجنة» - رواه مسلم",
+            "﴿وَمَن يَتَّقِ اللَّهَ يَجْعَل لَّهُ مَخْرَجًا﴾"
+        ];
+        const welcomeOverlay = document.getElementById("welcomeOverlay");
+        const welcomeQuote = document.getElementById("welcomeQuote");
+        const startBtn = document.getElementById("startBtn");
+
+        // نظهر النافذة بس لو المحادثة فاضية (أول مرة يفتح فيها الموقع)
+        if (chatBox.children.length === 0) {
+            welcomeQuote.textContent = quotes[Math.floor(Math.random() * quotes.length)];
+        } else {
+            welcomeOverlay.style.display = "none";
+        }
+
+        startBtn.addEventListener("click", () => {
+            welcomeOverlay.style.display = "none";
+            input.focus();
+        });
+
+        document.querySelectorAll(".markdown-content").forEach(el => {
+            el.innerHTML = marked.parse(el.dataset.raw);
+        });
+
+        function scrollToBottom() {
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+        scrollToBottom();
+
+        // --- تفعيل أزرار النسخ والتقييم على أي رسالة (قديمة أو جديدة) ---
+        function attachMessageActions(wrapper) {
+            const copyBtn = wrapper.querySelector(".copy-btn");
+            const thumbBtns = wrapper.querySelectorAll(".thumb-btn");
+            const botDiv = wrapper.querySelector(".bot-message");
+
+            if (copyBtn) {
+                copyBtn.addEventListener("click", () => {
+                    navigator.clipboard.writeText(botDiv.innerText);
+                    copyBtn.textContent = "✅";
+                    setTimeout(() => copyBtn.textContent = "📋", 1200);
+                });
+            }
+
+            thumbBtns.forEach(btn => {
+                btn.addEventListener("click", () => {
+                    thumbBtns.forEach(b => b.classList.remove("selected"));
+                    btn.classList.add("selected");
+                });
+            });
+        }
+        document.querySelectorAll(".message-wrapper").forEach(attachMessageActions);
+
+        // --- الكتابة الصوتية ---
+        let recognition = null;
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.lang = "ar-SA";
+            recognition.interimResults = false;
+
+            micBtn.addEventListener("click", () => {
+                recognition.start();
+                micBtn.classList.add("listening");
+                micBtn.textContent = "●";
+            });
+
+            recognition.onresult = (event) => {
+                input.value = event.results[0][0].transcript;
+            };
+
+            recognition.onend = () => {
+                micBtn.classList.remove("listening");
+                micBtn.textContent = "🎤";
+            };
+
+            recognition.onerror = () => {
+                micBtn.classList.remove("listening");
+                micBtn.textContent = "🎤";
+            };
+        } else {
+            micBtn.style.display = "none";
+        }
+
+        // --- الرد الصوتي ---
+        let voiceEnabled = false;
+
+        voiceToggleBtn.addEventListener("click", () => {
+            voiceEnabled = !voiceEnabled;
+            voiceToggleBtn.textContent = voiceEnabled ? "🔊 الصوت مفعّل" : "🔊 تفعيل الرد الصوتي";
+            if (!voiceEnabled) window.speechSynthesis.cancel();
+        });
+
+        function speakText(text) {
+            if (!voiceEnabled) return;
+            window.speechSynthesis.cancel();
+            const cleanText = text.replace(/[*#_`]/g, "");
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            utterance.lang = "ar-SA";
+            utterance.rate = 1.0;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // --- دالة عامة لاستقبال الرد المتدفق مع مؤشر الكتابة/البحث ---
+        async function streamToBotWrapper(url, body, wrapper, botDiv, extraClass) {
+            let rawText = "";
+            if (extraClass) botDiv.classList.add(extraClass);
+
+            botDiv.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
+            let firstChunk = true;
+
+            try {
+                const res = await fetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(body || {})
+                });
+
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = "";
+
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, { stream: true });
+
+                    const parts = buffer.split("\n\n");
+                    buffer = parts.pop();
+
+                    for (const part of parts) {
+                        if (part.startsWith("data: ")) {
+                            const data = JSON.parse(part.slice(6));
+                            if (data.status === "searching") {
+                                botDiv.innerHTML = '<span style="color:#888; font-size:14px;">🔎 جاري البحث في المصادر الموثوقة...</span>';
+                            }
+                            if (data.chunk) {
+                                if (firstChunk) { botDiv.innerHTML = ""; firstChunk = false; }
+                                rawText += data.chunk;
+                                botDiv.innerHTML = marked.parse(rawText);
+                                scrollToBottom();
+                            }
+                        }
+                    }
+                }
+            } catch (err) {
+                botDiv.textContent = "حصل خطأ، حاول تاني.";
+            }
+
+            const actionsDiv = document.createElement("div");
+            actionsDiv.className = "message-actions";
+            actionsDiv.innerHTML = `
+                <button class="action-btn copy-btn" title="نسخ">📋</button>
+                <button class="action-btn thumb-btn" data-value="up" title="إجابة جيدة">👍</button>
+                <button class="action-btn thumb-btn" data-value="down" title="إجابة تحتاج تحسين">👎</button>
+            `;
+            wrapper.appendChild(actionsDiv);
+            attachMessageActions(wrapper);
+
+            speakText(rawText);
+        }
+
+        form.addEventListener("submit", async function (e) {
+            e.preventDefault();
+            const question = input.value.trim();
+            if (!question) return;
+
+            const userWrapper = document.createElement("div");
+            userWrapper.className = "message-wrapper user-wrapper";
+            userWrapper.innerHTML = `<div class="message user-message"></div>`;
+            userWrapper.querySelector(".user-message").textContent = question;
+            chatBox.appendChild(userWrapper);
+
+            const botWrapper = document.createElement("div");
+            botWrapper.className = "message-wrapper";
+            const botDiv = document.createElement("div");
+            botDiv.className = "message bot-message";
+            botWrapper.appendChild(botDiv);
+            chatBox.appendChild(botWrapper);
+
+            input.value = "";
+            sendBtn.disabled = true;
+            scrollToBottom();
+
+            await streamToBotWrapper("/ask", { question: question }, botWrapper, botDiv);
+
+            sendBtn.disabled = false;
+        });
+
+        storyBtn.addEventListener("click", function () {
+            const topics = document.getElementById("storyTopics");
+            topics.style.display = topics.style.display === "none" ? "flex" : "none";
+        });
+
+        document.querySelectorAll("#storyTopics [data-topic]").forEach(btn => {
+            btn.addEventListener("click", async function () {
+                const topic = btn.dataset.topic;
+                document.getElementById("storyTopics").style.display = "none";
+                btn.disabled = true;
+
+                const botWrapper = document.createElement("div");
+                botWrapper.className = "message-wrapper";
+                const botDiv = document.createElement("div");
+                botDiv.className = "message bot-message";
+                botWrapper.appendChild(botDiv);
+                chatBox.appendChild(botWrapper);
+                scrollToBottom();
+
+                await streamToBotWrapper("/story", { topic: topic }, botWrapper, botDiv, "story-message");
+
+                btn.disabled = false;
+            });
+        });
+    </script>
+</body>
+</html>

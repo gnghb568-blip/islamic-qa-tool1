@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<body>
+<button onclick="test()">اختبار</button>
+<pre id="output"></pre>
+<script>
+function test() {
+    const voices = window.speechSynthesis.getVoices();
+    let result = "عدد الأصوات المتاحة: " + voices.length + "\n\n";
+    voices.forEach(v => {
+        result += v.name + " - " + v.lang + "\n";
+    });
+    document.getElementById("output").textContent = result;
+}
+</script>
+</body>
+</html>
